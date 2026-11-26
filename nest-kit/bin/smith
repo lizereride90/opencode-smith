@@ -1,0 +1,141 @@
+#!/usr/bin/env bash
+# smith — manage the nest kit, watchdog and local chat UI.
+set -uo pipefail
+
+say()  { printf '  \033[90m%s\033[0m\n' "$1"; }
+ok()   { printf '  \033[32m[+]\033[0m %s\n' "$1"; }
+warn() { printf '  \033[33m[!]\033[0m %s\n' "$1"; }
+
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd)"
+if [ -n "${SMITH_KIT:-}" ]; then
+  KIT="$SMITH_KIT"
+elif [ -d "$here/../web" ] && [ -f "$here/../lib/watchdog.py" ]; then
+  KIT="$(cd "$here/.." && pwd)"
+elif [ -d "$HOME/.local/share/smith-kit/web" ]; then
+  KIT="$HOME/.local/share/smith-kit"
+else
+  echo "smith: kit not found. set SMITH_KIT=/path/to/nest-kit" >&2
+  exit 1
+fi
+
+CONFIG="${XDG_CONFIG_HOME:-$HOME/.config}/opencode"
+PORT="${NEST_UI_PORT:-8787}"
+LOGS="$KIT/logs"
+PY="$(command -v python3 || command -v py || true)"
+PID_WATCH="$LOGS/watchdog.pid"
+PID_WEB="$LOGS/web.pid"
+
+alive() { [ -n "${1:-}" ] && kill -0 "$1" 2>/dev/null; }
+
+running_pid() {
+  local file="$1"
+  [ -f "$file" ] || return 0
+  local pid
+  pid="$(cat "$file" 2>/dev/null || true)"
+  alive "$pid" && printf '%s' "$pid"
+}
+
+start() {
+  mkdir -p "$LOGS"
+  local watchdog_pid web_pid
+  watchdog_pid="$(running_pid "$PID_WATCH")"
+  web_pid="$(running_pid "$PID_WEB")"
+
+  if [ -z "$watchdog_pid" ]; then
+    if [ -z "$PY" ]; then warn "python3 missing — watchdog not started";
+    else
+      nohup "$PY" "$KIT/lib/watchdog.py" >>"$LOGS/watchdog.out" 2>&1 &
+      echo $! > "$PID_WATCH"
+      ok "watchdog started ($(cat "$PID_WATCH"))"
+    fi
+  else ok "watchdog already running ($watchdog_pid)"; fi
+
+  if [ -z "$web_pid" ]; then
+    if curl -fsS "http://127.0.0.1:$PORT/api/status" >/dev/null 2>&1; then
+      warn "port $PORT already answering from another process — not starting a second UI"
+    elif [ -z "$PY" ]; then warn "python3 missing — UI not started";
+    else
+      nohup "$PY" "$KIT/web/server.py" --host 127.0.0.1 --port "$PORT" >>"$LOGS/web.out" 2>&1 &
+      echo $! > "$PID_WEB"
+      sleep 2
+      ok "chat UI on http://127.0.0.1:$PORT ($(cat "$PID_WEB"))"
+    fi
+  else ok "chat UI already running ($web_pid)"; fi
+
+  if curl -fsS "http://127.0.0.1:$PORT/api/status" >/dev/null 2>&1; then
+    ok "UI answered a status check"
+  else
+    warn "UI not answering yet — see $LOGS/web.out"
+  fi
+}
+
+stop() {
+  local pid
+  for file in "$PID_WEB" "$PID_WATCH"; do
+    pid="$(running_pid "$file")"
+    if [ -n "$pid" ]; then
+      kill "$pid" 2>/dev/null && ok "stopped $file ($pid)"
+    else
+      say "not running: $file"
+    fi
+    rm -f "$file"
+  done
+}
+
+info() {
+  echo "==> smith info"
+  say "kit:    $KIT"
+  say "config: $CONFIG"
+  say "port:   $PORT"
+  say "watchdog: $(running_pid "$PID_WATCH" || echo stopped)"
+  say "ui:       $(running_pid "$PID_WEB" || echo stopped)"
+
+  if curl -fsS "http://127.0.0.1:$PORT/api/status" >/dev/null 2>&1; then
+    curl -fsS "http://127.0.0.1:$PORT/api/status" | python3 -c "
+import sys,json
+d=json.load(sys.stdin)
+print('  version:       '+str(d.get('version','')))
+print('  default agent: '+str(d.get('default_agent',''))+' ('+str(d.get('agent_mode',''))+')')
+print('  project id:    '+str(d.get('project_id','')))
+print('  smith skill:   '+('installed' if d.get('smith_ready') else 'missing'))
+print('  quota:         '+('limit detected' if d.get('limit_detected') else 'clear'))
+" 2>/dev/null || warn "could not parse status"
+  elif [ -f "$KIT/lib/configure.py" ] && [ -n "$PY" ]; then
+    "$PY" "$KIT/lib/configure.py" --show
+  fi
+}
+
+uninstall() {
+  echo "==> smith uninstall"
+  warn "this removes the kit, the skill, the lowkeyy agent and the smith command"
+  warn "OpenCode and OpenCode Unlimited are left installed"
+  printf '  type "yes" to continue: '
+  read -r CONFIRM </dev/tty || CONFIRM=""
+  [ "$CONFIRM" = "yes" ] || { say "aborted"; return 0; }
+
+  stop
+  rm -rf "$KIT"
+  rm -rf "$CONFIG/skills/jailbreak-smith"
+  rm -f "$CONFIG/agents/lowkeyy.md"
+  rm -f "$CONFIG/agents/smith-"*.md
+  rm -f "$HOME/.local/bin/smith"
+  ok "smith removed"
+}
+
+donate() {
+  echo "==> donate"
+  say "DM originallyknownasjiun on Discord to donate."
+  say "credit for shared jailbreaks: DM the same handle on Discord."
+}
+
+case "${1:-info}" in
+  start)     start ;;
+  stop)      stop ;;
+  info)      info ;;
+  uninstall) uninstall ;;
+  donate)    donate ;;
+  *)
+    echo "usage: smith {start|stop|info|uninstall|donate}" >&2
+    exit 2
+    ;;
+esac
