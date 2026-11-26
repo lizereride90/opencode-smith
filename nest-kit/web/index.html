@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0d1114">
 <title>nest chat</title>
-<link rel="stylesheet" href="/styles.css">
+<link rel="stylesheet" href="/styles.css?v=4">
 </head>
 <body>
 <div class="app">
@@ -20,6 +20,7 @@
     <div class="side-label">recent</div>
     <div class="chats" id="chats"><div class="side-empty">no chats yet</div></div>
     <div class="side-foot">
+      <div class="catalog" id="catalog-counts">loading catalogs…</div>
       <button class="side-btn" id="settings-open"><span>◎</span> settings</button>
     </div>
   </aside>
@@ -35,6 +36,8 @@
         <label class="agent-toggle" title="use lowkeyy agent">
           <input type="checkbox" id="agent" checked><span></span>lowkeyy
         </label>
+        <button class="palette-btn" id="cmd-open" title="OpenCode commands">/</button>
+        <button class="palette-btn" id="skill-open" title="skills">@</button>
         <button class="icon-btn settings-icon" id="settings-open-2" aria-label="settings">◎</button>
       </div>
     </header>
@@ -53,7 +56,7 @@
         <textarea id="input" rows="1" placeholder="message the nest…" spellcheck="false"></textarea>
         <button class="send" id="send" type="submit" aria-label="send">↑</button>
       </div>
-      <div class="composer-hint">enter to send · shift+enter for a new line</div>
+      <div class="composer-hint">/ commands · @ skills · enter to send · shift+enter new line</div>
     </form>
   </main>
 </div>
@@ -114,6 +117,6 @@
 </div>
 
 <div class="toast" id="toast"></div>
-<script src="/app.js"></script>
+<script src="/app.js?v=4"></script>
 </body>
 </html>

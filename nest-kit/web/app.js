@@ -182,6 +182,12 @@ async function loadSkills() {
   if (Array.isArray(data)) state.skills = data;
 }
 
+function updateCatalog() {
+  const el = $('#catalog-counts');
+  if (!el) return;
+  el.textContent = `${state.models.length} models · ${state.commands.length} cmds · ${state.skills.length} skills`;
+}
+
 function atToken() {
   const input = $('#input');
   const caret = input.selectionStart ?? input.value.length;
@@ -358,6 +364,17 @@ function bind() {
   });
   $('#palette').addEventListener('click', (e) => { if (e.target === $('#palette')) closePalette(); });
   $('#model').addEventListener('change', () => store.set('model', $('#model').value));
+  $('#cmd-open').addEventListener('click', () => {
+    showPalette('command');
+    $('#input').focus();
+  });
+  $('#skill-open').addEventListener('click', () => {
+    const input = $('#input');
+    if (!atToken()) input.value = (input.value && !input.value.endsWith(' ') ? input.value + ' ' : input.value) + '@';
+    input.focus();
+    input.setSelectionRange(input.value.length, input.value.length);
+    showPalette('skill');
+  });
   $('#new-chat').addEventListener('click', newChat);
   $('#menu').addEventListener('click', () => document.body.classList.add('drawer'));
   $('#close-side').addEventListener('click', () => document.body.classList.remove('drawer'));
@@ -400,4 +417,5 @@ function bind() {
   applyPrefs();
   bind();
   await Promise.all([loadSessions(), loadStatus(), loadModels(), loadCommands(), loadSkills()]);
+  updateCatalog();
 })();

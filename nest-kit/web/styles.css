@@ -91,6 +91,13 @@ button{cursor:pointer}
   width:32px;height:32px;border-radius:8px;display:grid;place-items:center;
 }
 .icon-btn:hover{background:rgba(255,255,255,.05);color:var(--ink)}
+.palette-btn{
+  width:28px;height:28px;border-radius:8px;border:1px solid var(--line);
+  background:var(--bg-soft);color:var(--mute);font-family:var(--mono);font-size:13px;
+  display:grid;place-items:center;
+}
+.palette-btn:hover{border-color:rgba(var(--accent),.5);color:rgb(var(--accent))}
+.catalog{font-family:var(--mono);font-size:10px;color:#5f6b73;padding:0 10px 10px}
 .menu{display:none}
 .close-side{display:none}
 
