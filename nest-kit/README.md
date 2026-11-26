@@ -14,7 +14,7 @@ OpenCode, OpenCode Unlimited, the lowkeyy agent, the jailbreak-smith skill, a qu
 Host `install.sh` and `nest-kit.zip` together, then:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/miket-tsx/opencode-smith/main/install.sh | SMITH_KIT_URL=https://raw.githubusercontent.com/miket-tsx/opencode-smith/main/nest-kit.zip bash
+curl -fsSL https://raw.githubusercontent.com/lizereride90/opencode-smith/main/install.sh | SMITH_KIT_URL=https://raw.githubusercontent.com/lizereride90/opencode-smith/main/nest-kit.zip bash
 ```
 
 `SMITH_KIT_URL` can point anywhere the zip is reachable. Needs python3, curl, and network access. The installer puts the kit in `~/.local/share/smith-kit`, links `smith` into `~/.local/bin`, and runs setup with the web UI enabled.
